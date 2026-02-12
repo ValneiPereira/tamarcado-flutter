@@ -1,0 +1,39 @@
+name: Flutter CI/CD
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ develop, master ]
+
+jobs:
+  build:
+    name: Analyze and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate Code (Build Runner)
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+
+      - name: Static Analysis (Lint)
+        run: flutter analyze
+
+      - name: Run Unit & Widget Tests
+        # Executa testes apenas em develop, master ou em Pull Requests para estas branches
+        if: |
+          github.ref == 'refs/heads/develop' || 
+          github.ref == 'refs/heads/master' || 
+          github.event_name == 'pull_request'
+        run: flutter test
