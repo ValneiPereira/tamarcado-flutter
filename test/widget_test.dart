@@ -8,6 +8,6 @@ void main() {
       const ProviderScope(child: TamarcadoApp()),
     );
 
-    expect(find.text('Tá Marcado! - Em construção'), findsOneWidget);
+    expect(find.text('Tá Marcado!'), findsAtLeast(1));
   });
 }

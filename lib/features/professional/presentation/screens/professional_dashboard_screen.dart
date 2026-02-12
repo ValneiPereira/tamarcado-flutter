@@ -332,7 +332,7 @@ class _ProfessionalDashboardScreenState
     );
   }
 
-  Future<void> _acceptAppointment(int id) async {
+  Future<void> _acceptAppointment(String id) async {
     await ref.read(appointmentsProvider.notifier).acceptAppointment(id);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -341,7 +341,7 @@ class _ProfessionalDashboardScreenState
     }
   }
 
-  Future<void> _rejectAppointment(int id) async {
+  Future<void> _rejectAppointment(String id) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
