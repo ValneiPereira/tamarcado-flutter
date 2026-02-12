@@ -40,7 +40,7 @@ class _ProfessionalDashboardScreenState
     final user = ref.watch(authProvider).user;
     final dashboardState = ref.watch(dashboardProvider);
     final appointmentsState = ref.watch(appointmentsProvider);
-    final firstName = user?.name?.split(' ').first ?? '';
+    final firstName = user?.name.split(' ').first ?? '';
     final stats = dashboardState.stats;
 
     if (dashboardState.isLoading && stats == null) {

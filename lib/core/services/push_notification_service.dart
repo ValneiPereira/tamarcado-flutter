@@ -2,7 +2,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
 import '../../features/auth/presentation/providers/auth_provider.dart';
-import '../network/dio_client.dart';
 import '../../features/shared/data/datasources/notification_remote_datasource.dart';
 
 /// Inicializa FCM e registra o device token no backend quando o usuário está autenticado.

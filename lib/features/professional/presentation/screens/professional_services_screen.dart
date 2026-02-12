@@ -7,7 +7,6 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_input.dart';
 import '../../../../core/widgets/loading_spinner.dart';
-import '../../../../core/network/dio_client.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../client/data/models/service_model.dart';
 import '../../../client/data/datasources/professionals_remote_datasource.dart';

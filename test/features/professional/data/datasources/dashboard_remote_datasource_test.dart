@@ -3,7 +3,6 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:dio/dio.dart';
 import 'package:tamarcado_flutter/features/professional/data/datasources/dashboard_remote_datasource.dart';
-import 'package:tamarcado_flutter/features/professional/data/models/dashboard_stats_model.dart';
 
 import 'dashboard_remote_datasource_test.mocks.dart';
 

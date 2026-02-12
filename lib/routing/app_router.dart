@@ -22,20 +22,27 @@ import '../features/professional/presentation/screens/professional_business_hour
 import '../features/professional/presentation/screens/professional_edit_profile_screen.dart';
 import '../features/professional/presentation/screens/professional_address_screen.dart';
 import '../core/theme/app_colors.dart';
+import '../features/client/presentation/providers/professionals_provider.dart';
 import 'route_names.dart';
 
 // Client Shell com Bottom Navigation
-class ClientShell extends StatelessWidget {
+class ClientShell extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
   const ClientShell({super.key, required this.navigationShell});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: navigationShell.currentIndex,
-        onTap: (index) => navigationShell.goBranch(index),
+        onTap: (index) {
+          // Se clicar no Home (index 0) e já está no Home, resetar busca
+          if (index == 0 && navigationShell.currentIndex == 0) {
+            ref.read(professionalSearchProvider.notifier).reset();
+          }
+          navigationShell.goBranch(index);
+        },
         backgroundColor: AppColors.primary,
         selectedItemColor: AppColors.textOnPrimary,
         unselectedItemColor: const Color(0x99FFFFFF),

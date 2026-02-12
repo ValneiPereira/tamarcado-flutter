@@ -7,7 +7,6 @@ import '../../../../core/utils/validators.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_input.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../shared/data/datasources/user_remote_datasource.dart';
 
 class ClientChangePasswordScreen extends ConsumerStatefulWidget {
   const ClientChangePasswordScreen({super.key});

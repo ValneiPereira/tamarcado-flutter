@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_button.dart';
-import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/loading_spinner.dart';
 import '../../../../core/widgets/star_rating.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../professional/data/models/business_hours_model.dart';
+import '../../data/datasources/appointments_remote_datasource.dart';
+import '../../data/models/professional_model.dart';
+import '../../data/models/service_model.dart';
 import '../providers/professionals_provider.dart';
+import '../../../../routing/route_names.dart';
 
 class ProfessionalDetailScreen extends ConsumerStatefulWidget {
   final String professionalId;
@@ -22,31 +28,70 @@ class ProfessionalDetailScreen extends ConsumerStatefulWidget {
 
 class _ProfessionalDetailScreenState
     extends ConsumerState<ProfessionalDetailScreen> {
+  ProfessionalModel? _professional;
+  bool _isLoading = true;
+  String? _error;
+
   @override
   void initState() {
     super.initState();
-    // Em um cenário real, carregaríamos os detalhes específicos aqui se não estiverem no estado
+    _loadProfessional();
+  }
+
+  Future<void> _loadProfessional() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final ds = ref.read(professionalsDatasourceProvider);
+      final prof = await ds.getProfessionalById(widget.professionalId);
+      if (mounted) {
+        setState(() {
+          _professional = prof;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Erro ao carregar profissional';
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final listState = ref.watch(professionalsListProvider);
-    final professionals = listState.professionals;
-    
-    // Tentar encontrar o profissional
-    final profIndex = professionals.indexWhere((p) => p.id == widget.professionalId);
-    
-    if (profIndex == -1) {
-      if (listState.isLoading) {
-        return const Scaffold(body: LoadingSpinner(fullScreen: true));
-      }
+    if (_isLoading) {
+      return const Scaffold(body: LoadingSpinner(fullScreen: true));
+    }
+
+    if (_error != null || _professional == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Ops!')),
-        body: const Center(child: Text('Profissional não encontrado.')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(_error ?? 'Profissional não encontrado.'),
+              const SizedBox(height: AppSpacing.md),
+              SizedBox(
+                width: 200,
+                child: AppButton(
+                  title: 'Tentar novamente',
+                  onPressed: _loadProfessional,
+                  variant: ButtonVariant.outline,
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
-    
-    final prof = professionals[profIndex];
+
+    final prof = _professional!;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -61,22 +106,14 @@ class _ProfessionalDetailScreenState
                 children: [
                   _buildHeaderInfo(prof),
                   const SizedBox(height: AppSpacing.xl),
-                  _buildSectionTitle('Serviços'),
-                  const SizedBox(height: AppSpacing.md),
-                  ...prof.services.map((service) => _buildServiceCard(service)),
-                  const SizedBox(height: AppSpacing.xl),
                   _buildSectionTitle('Sobre'),
                   const SizedBox(height: AppSpacing.md),
                   _buildAboutSection(prof),
                   const SizedBox(height: AppSpacing.xl),
-                  _buildSectionTitle('Localização'),
-                  const SizedBox(height: AppSpacing.md),
-                  _buildLocationCard(prof),
-                  const SizedBox(height: AppSpacing.xl),
                   _buildSectionTitle('Avaliações'),
                   const SizedBox(height: AppSpacing.md),
                   _buildReviewsSection(prof),
-                  const SizedBox(height: 100), // Espaço para o botão flutuante
+                  const SizedBox(height: 100),
                 ],
               ),
             ),
@@ -87,7 +124,7 @@ class _ProfessionalDetailScreenState
     );
   }
 
-  Widget _buildSliverAppBar(prof) {
+  Widget _buildSliverAppBar(ProfessionalModel prof) {
     return SliverAppBar(
       expandedHeight: 250,
       pinned: true,
@@ -97,10 +134,7 @@ class _ProfessionalDetailScreenState
           fit: StackFit.expand,
           children: [
             if (prof.photo != null)
-              Image.network(
-                prof.photo!,
-                fit: BoxFit.cover,
-              )
+              Image.network(prof.photo!, fit: BoxFit.cover)
             else
               Container(
                 color: AppColors.primaryLight,
@@ -112,7 +146,6 @@ class _ProfessionalDetailScreenState
                   ),
                 ),
               ),
-            // Gradient Overlay
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -132,7 +165,7 @@ class _ProfessionalDetailScreenState
     );
   }
 
-  Widget _buildHeaderInfo(prof) {
+  Widget _buildHeaderInfo(ProfessionalModel prof) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -197,11 +230,11 @@ class _ProfessionalDetailScreenState
               style: TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(width: AppSpacing.lg),
-            Icon(Icons.access_time, size: 16, color: AppColors.textLight),
+            Icon(Icons.star_border, size: 16, color: AppColors.textLight),
             const SizedBox(width: 4),
-            const Text(
-              'Aberto agora',
-              style: TextStyle(color: AppColors.success, fontWeight: FontWeight.bold),
+            Text(
+              '${prof.totalRatings} avaliações',
+              style: TextStyle(color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -220,37 +253,9 @@ class _ProfessionalDetailScreenState
     );
   }
 
-  Widget _buildServiceCard(service) {
-    return AppCard(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.xs,
-        ),
-        title: Text(
-          service.name,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(
-          Formatters.formatDuration(service.durationMinutes),
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-        trailing: Text(
-          Formatters.formatCurrency(service.price),
-          style: const TextStyle(
-            fontSize: AppTypography.lg,
-            fontWeight: FontWeight.bold,
-            color: AppColors.primary,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAboutSection(prof) {
+  Widget _buildAboutSection(ProfessionalModel prof) {
     return Text(
-      'Profissional qualificado com vasta experiência em ${Formatters.formatServiceName(prof.serviceType)}. Atendimento personalizado e materiais de alta qualidade para garantir a melhor experiência para você.',
+      'Profissional de ${Formatters.formatServiceName(prof.serviceType)} na categoria ${Formatters.formatServiceName(prof.category)}.',
       style: TextStyle(
         fontSize: AppTypography.base,
         color: AppColors.textSecondary,
@@ -259,46 +264,7 @@ class _ProfessionalDetailScreenState
     );
   }
 
-  Widget _buildLocationCard(prof) {
-    final addr = prof.address;
-    if (addr == null) return const SizedBox();
-
-    return AppCard(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.map_outlined, color: AppColors.primary),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${addr.street}, ${addr.number}',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  Text(
-                    '${addr.neighborhood}, ${addr.city} - ${addr.state}',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: AppTypography.sm),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReviewsSection(prof) {
+  Widget _buildReviewsSection(ProfessionalModel prof) {
     if (prof.reviews.isEmpty) {
       return Center(
         child: Padding(
@@ -311,7 +277,9 @@ class _ProfessionalDetailScreenState
       );
     }
     return Column(
-      children: prof.reviews.map<Widget>((review) => _buildReviewItem(review)).toList(),
+      children: prof.reviews
+          .map<Widget>((review) => _buildReviewItem(review))
+          .toList(),
     );
   }
 
@@ -323,24 +291,28 @@ class _ProfessionalDetailScreenState
         children: [
           Row(
             children: [
-              AppAvatar(name: review.clientName, size: AvatarSize.small),
+              AppAvatar(
+                  name: review.clientName ?? 'Cliente',
+                  size: AvatarSize.small),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      review.clientName,
+                      review.clientName ?? 'Cliente',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     StarRating(rating: review.rating.toDouble(), size: 12),
                   ],
                 ),
               ),
-              Text(
-                Formatters.dateToString(review.createdAt),
-                style: TextStyle(fontSize: AppTypography.xs, color: AppColors.textLight),
-              ),
+              if (review.createdAt != null)
+                Text(
+                  Formatters.dateToString(review.createdAt),
+                  style: TextStyle(
+                      fontSize: AppTypography.xs, color: AppColors.textLight),
+                ),
             ],
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -357,7 +329,7 @@ class _ProfessionalDetailScreenState
     );
   }
 
-  Widget _buildBottomAction(prof) {
+  Widget _buildBottomAction(ProfessionalModel prof) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -373,10 +345,433 @@ class _ProfessionalDetailScreenState
       child: SafeArea(
         child: AppButton(
           title: 'Agendar Horário',
-          onPressed: () {
-            // TODO: Iniciar fluxo de agendamento
-          },
+          onPressed: () => _showBookingSheet(prof),
           size: ButtonSize.large,
+        ),
+      ),
+    );
+  }
+
+  void _showBookingSheet(ProfessionalModel prof) {
+    if (prof.services.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content:
+                Text('Este profissional não possui serviços cadastrados')),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(AppBorderRadius.xl)),
+      ),
+      builder: (_) => _BookingSheet(
+        professional: prof,
+        dio: ref.read(dioClientProvider).dio,
+        onBook: (serviceId, date, time, notes) async {
+          final ds = AppointmentsRemoteDatasource(
+              ref.read(dioClientProvider).dio);
+          await ds.createAppointment(
+            professionalId: prof.id,
+            serviceId: serviceId,
+            date: date,
+            time: time,
+            notes: notes,
+          );
+        },
+        onSuccess: () {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text('Agendamento solicitado com sucesso!')),
+            );
+            context.go(RouteNames.clientAppointments);
+          }
+        },
+      ),
+    );
+  }
+}
+
+class _BookingSheet extends StatefulWidget {
+  final ProfessionalModel professional;
+  final dynamic dio;
+  final Future<void> Function(
+      String serviceId, String date, String time, String? notes) onBook;
+  final VoidCallback onSuccess;
+
+  const _BookingSheet({
+    required this.professional,
+    required this.dio,
+    required this.onBook,
+    required this.onSuccess,
+  });
+
+  @override
+  State<_BookingSheet> createState() => _BookingSheetState();
+}
+
+class _BookingSheetState extends State<_BookingSheet> {
+  ServiceModel? _selectedService;
+  DateTime? _selectedDate;
+  String? _selectedTimeSlot;
+  final _notesController = TextEditingController();
+  bool _isBooking = false;
+  List<BusinessHoursModel> _businessHours = [];
+  bool _loadingHours = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBusinessHours();
+  }
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadBusinessHours() async {
+    try {
+      final response = await widget.dio
+          .get('/professionals/${widget.professional.id}/business-hours');
+      final data = response.data['data'] as List<dynamic>;
+      if (mounted) {
+        setState(() {
+          _businessHours = data
+              .map(
+                  (e) => BusinessHoursModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+          _loadingHours = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loadingHours = false);
+      }
+    }
+  }
+
+  /// Converts day of week: DateTime (1=Monday..7=Sunday) to our model (0=Monday..6=Sunday)
+  int _dartWeekdayToModel(int dartWeekday) => dartWeekday - 1;
+
+  /// Get available time slots for a given date based on business hours
+  List<String> _getTimeSlotsForDate(DateTime date) {
+    final dayOfWeek = _dartWeekdayToModel(date.weekday);
+    final hours =
+        _businessHours.where((h) => h.dayOfWeek == dayOfWeek && h.active);
+
+    if (hours.isEmpty) return [];
+
+    final bh = hours.first;
+    final slots = <String>[];
+
+    final startParts = bh.startTime.split(':');
+    final endParts = bh.endTime.split(':');
+    var currentHour = int.parse(startParts[0]);
+    var currentMinute = int.parse(startParts[1]);
+    final endHour = int.parse(endParts[0]);
+    final endMinute = int.parse(endParts[1]);
+
+    // Generate slots every 30 minutes
+    while (currentHour < endHour ||
+        (currentHour == endHour && currentMinute < endMinute)) {
+      slots.add(
+          '${currentHour.toString().padLeft(2, '0')}:${currentMinute.toString().padLeft(2, '0')}');
+      currentMinute += 30;
+      if (currentMinute >= 60) {
+        currentMinute -= 60;
+        currentHour++;
+      }
+    }
+
+    return slots;
+  }
+
+  /// Check if a date has available business hours
+  bool _isDateAvailable(DateTime date) {
+    final dayOfWeek = _dartWeekdayToModel(date.weekday);
+    return _businessHours.any((h) => h.dayOfWeek == dayOfWeek && h.active);
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: now.add(const Duration(days: 1)),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 90)),
+      selectableDayPredicate:
+          _businessHours.isNotEmpty ? _isDateAvailable : null,
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+        _selectedTimeSlot = null;
+      });
+    }
+  }
+
+  Future<void> _handleBook() async {
+    if (_selectedService == null ||
+        _selectedDate == null ||
+        _selectedTimeSlot == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecione serviço, data e horário')),
+      );
+      return;
+    }
+
+    setState(() => _isBooking = true);
+    final dateStr =
+        '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
+
+    try {
+      await widget.onBook(
+        _selectedService!.id,
+        dateStr,
+        _selectedTimeSlot!,
+        _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
+      );
+      if (mounted) {
+        Navigator.of(context).pop();
+        widget.onSuccess();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao agendar: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isBooking = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final services = widget.professional.services;
+    final timeSlots = _selectedDate != null
+        ? _getTimeSlotsForDate(_selectedDate!)
+        : <String>[];
+
+    return Padding(
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.borderLight,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              const Text(
+                'Agendar Horário',
+                style: TextStyle(
+                  fontSize: AppTypography.xl,
+                  fontWeight: AppTypography.bold,
+                  color: AppColors.text,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+
+              // Service selection
+              const Text(
+                'Selecione o serviço',
+                style: TextStyle(
+                  fontSize: AppTypography.base,
+                  fontWeight: AppTypography.semibold,
+                  color: AppColors.text,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              ...services.map((service) => RadioListTile<ServiceModel>(
+                    title: Text(service.name),
+                    subtitle: Text(Formatters.formatCurrency(service.price)),
+                    value: service,
+                    groupValue: _selectedService,
+                    activeColor: AppColors.primary,
+                    onChanged: (val) =>
+                        setState(() => _selectedService = val),
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                  )),
+              const SizedBox(height: AppSpacing.md),
+
+              // Date selection
+              const Text(
+                'Data',
+                style: TextStyle(
+                  fontSize: AppTypography.base,
+                  fontWeight: AppTypography.semibold,
+                  color: AppColors.text,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              InkWell(
+                onTap: _pickDate,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.md,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.border),
+                    borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _selectedDate != null
+                            ? Formatters.formatDateShort(_selectedDate!)
+                            : 'Selecione a data',
+                        style: TextStyle(
+                          color: _selectedDate != null
+                              ? AppColors.text
+                              : AppColors.textLight,
+                        ),
+                      ),
+                      Icon(Icons.calendar_today,
+                          size: 20, color: AppColors.textSecondary),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+
+              // Time slots
+              const Text(
+                'Horário',
+                style: TextStyle(
+                  fontSize: AppTypography.base,
+                  fontWeight: AppTypography.semibold,
+                  color: AppColors.text,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              if (_loadingHours)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(AppSpacing.md),
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              else if (_selectedDate == null)
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Text(
+                    'Selecione uma data primeiro',
+                    style: TextStyle(color: AppColors.textLight),
+                  ),
+                )
+              else if (timeSlots.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Text(
+                    'Nenhum horário disponível nesta data',
+                    style: TextStyle(color: AppColors.textLight),
+                  ),
+                )
+              else
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: timeSlots.map((slot) {
+                    final isSelected = _selectedTimeSlot == slot;
+                    return ChoiceChip(
+                      label: Text(slot),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        setState(
+                            () => _selectedTimeSlot = selected ? slot : null);
+                      },
+                      selectedColor: AppColors.primary,
+                      labelStyle: TextStyle(
+                        color: isSelected
+                            ? AppColors.textOnPrimary
+                            : AppColors.text,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      backgroundColor: AppColors.surface,
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(AppBorderRadius.md),
+                        side: BorderSide(
+                          color: isSelected
+                              ? AppColors.primary
+                              : AppColors.border,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              const SizedBox(height: AppSpacing.md),
+
+              // Notes
+              const Text(
+                'Observações (opcional)',
+                style: TextStyle(
+                  fontSize: AppTypography.base,
+                  fontWeight: AppTypography.semibold,
+                  color: AppColors.text,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              TextField(
+                controller: _notesController,
+                maxLines: 2,
+                decoration: InputDecoration(
+                  hintText: 'Alguma observação para o profissional?',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                    borderSide: BorderSide(color: AppColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                    borderSide: BorderSide(color: AppColors.border),
+                  ),
+                  contentPadding: const EdgeInsets.all(AppSpacing.md),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              AppButton(
+                title: 'Confirmar Agendamento',
+                onPressed: () {
+                  _handleBook();
+                },
+                loading: _isBooking,
+                disabled: _isBooking,
+              ),
+              const SizedBox(height: AppSpacing.md),
+            ],
+          ),
         ),
       ),
     );

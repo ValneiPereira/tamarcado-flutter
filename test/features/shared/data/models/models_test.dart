@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tamarcado_flutter/features/auth/data/models/user_model.dart';
 import 'package:tamarcado_flutter/features/shared/data/models/address_model.dart';
-import 'package:tamarcado_flutter/features/client/data/models/appointment_model.dart';
 import 'package:tamarcado_flutter/features/client/data/models/professional_model.dart';
 
 void main() {

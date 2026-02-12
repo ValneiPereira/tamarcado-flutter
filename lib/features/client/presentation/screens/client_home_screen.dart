@@ -63,7 +63,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     final user = ref.watch(authProvider).user;
     final searchState = ref.watch(professionalSearchProvider);
     final listState = ref.watch(professionalsListProvider);
-    final firstName = user?.name?.split(' ').first ?? '';
+    final firstName = user?.name.split(' ').first ?? '';
 
     return Scaffold(
       backgroundColor: AppColors.background,

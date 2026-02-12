@@ -3,7 +3,6 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:dio/dio.dart';
 import 'package:tamarcado_flutter/features/client/data/datasources/appointments_remote_datasource.dart';
-import 'package:tamarcado_flutter/features/client/data/models/appointment_model.dart';
 
 import 'appointments_remote_datasource_test.mocks.dart';
 

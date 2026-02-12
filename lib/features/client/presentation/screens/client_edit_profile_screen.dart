@@ -13,7 +13,6 @@ import '../../../../core/widgets/loading_spinner.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../shared/data/datasources/cep_remote_datasource.dart';
 import '../../../shared/data/datasources/cloudinary_datasource.dart';
-import '../../../shared/data/datasources/user_remote_datasource.dart';
 import '../../../shared/data/models/address_model.dart';
 import '../../../shared/presentation/widgets/address_form.dart';
 
@@ -30,7 +29,6 @@ class _ClientEditProfileScreenState extends ConsumerState<ClientEditProfileScree
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   late AddressModel _address;
-  bool _loadingCep = false;
   bool _isLoading = false;
   bool _isUploading = false;
   String? _localPhotoUrl;
@@ -89,7 +87,7 @@ class _ClientEditProfileScreenState extends ConsumerState<ClientEditProfileScree
       final cloudinary = ref.read(cloudinaryDatasourceProvider);
       final userId = ref.read(authProvider).user?.id.toString() ?? 'user';
       final photoUrl = await cloudinary.uploadImage(xFile, userId);
-      if (photoUrl == null || !mounted) return;
+      if (!mounted) return;
 
       final userDs = ref.read(userDatasourceProvider);
       final updated = await userDs.updatePhoto(photoUrl);
