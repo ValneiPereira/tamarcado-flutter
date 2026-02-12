@@ -7,6 +7,7 @@ void main() {
     await tester.pumpWidget(
       const ProviderScope(child: TamarcadoApp()),
     );
+    await tester.pumpAndSettle();
 
     expect(find.text('Tá Marcado!'), findsAtLeast(1));
   });

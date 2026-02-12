@@ -6,7 +6,7 @@ import 'package:tamarcado_flutter/features/auth/data/datasources/auth_remote_dat
 import 'package:tamarcado_flutter/features/auth/data/models/auth_response.dart';
 import 'package:tamarcado_flutter/features/auth/data/models/user_model.dart';
 
-import 'auth_unit_test.mocks.dart';
+import 'auth_remote_datasource_test.mocks.dart';
 
 @GenerateMocks([Dio])
 void main() {
