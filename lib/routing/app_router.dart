@@ -18,6 +18,7 @@ import '../features/professional/presentation/screens/professional_dashboard_scr
 import '../features/professional/presentation/screens/professional_appointments_screen.dart';
 import '../features/professional/presentation/screens/professional_services_screen.dart';
 import '../features/professional/presentation/screens/professional_profile_screen.dart';
+import '../features/professional/presentation/screens/professional_business_hours_screen.dart';
 import '../features/professional/presentation/screens/professional_edit_profile_screen.dart';
 import '../features/professional/presentation/screens/professional_address_screen.dart';
 import '../core/theme/app_colors.dart';
@@ -225,6 +226,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                 GoRoute(
                   path: 'address',
                   builder: (_, __) => const ProfessionalAddressScreen(),
+                ),
+                GoRoute(
+                  path: 'business-hours',
+                  builder: (_, __) => const ProfessionalBusinessHoursScreen(),
                 ),
                 GoRoute(
                   path: 'change-password',

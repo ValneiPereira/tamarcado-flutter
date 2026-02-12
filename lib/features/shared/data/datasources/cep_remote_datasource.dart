@@ -11,7 +11,8 @@ class CepRemoteDatasource {
     final response = await _apiDio.post('/geocoding/cep', data: {
       'cep': cep,
     });
-    return AddressModel.fromJson(response.data as Map<String, dynamic>);
+    final data = response.data['data'] as Map<String, dynamic>;
+    return AddressModel.fromJson(data);
   }
 
   /// Busca endereço via ViaCEP (fallback externo)
