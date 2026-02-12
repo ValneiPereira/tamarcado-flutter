@@ -11,8 +11,6 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../routing/route_names.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../client/data/models/service_model.dart';
-import '../../../client/data/datasources/professionals_remote_datasource.dart';
 
 class ProfessionalProfileScreen extends ConsumerStatefulWidget {
   const ProfessionalProfileScreen({super.key});
@@ -25,27 +23,6 @@ class ProfessionalProfileScreen extends ConsumerStatefulWidget {
 class _ProfessionalProfileScreenState
     extends ConsumerState<ProfessionalProfileScreen> {
   bool _isLoggingOut = false;
-  List<ServiceModel> _services = [];
-  bool _loadingServices = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadServices();
-  }
-
-  Future<void> _loadServices() async {
-    try {
-      final dio = ref.read(dioClientProvider).dio;
-      final ds = ProfessionalsRemoteDatasource(dio);
-      final list = await ds.getMyServices();
-      if (mounted) setState(() => _services = list);
-    } catch (_) {
-      if (mounted) setState(() => _services = []);
-    } finally {
-      if (mounted) setState(() => _loadingServices = false);
-    }
-  }
 
   Future<void> _handleLogout() async {
     final ok = await showDialog<bool>(
@@ -92,66 +69,71 @@ class _ProfessionalProfileScreenState
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             children: [
               _buildHeader(),
-              AppCard(
-                variant: CardVariant.elevated,
-                margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+              Padding(
                 padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Row(
+                child: Column(
                   children: [
-                    AppAvatar(
-                      imageUrl: user?.photo,
-                      name: user?.name,
-                      size: AvatarSize.xxlarge,
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    AppCard(
+                      variant: CardVariant.elevated,
+                      margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: Row(
                         children: [
-                          Text(
-                            user?.name ?? '—',
-                            style: TextStyle(
-                                fontSize: AppTypography.xl,
-                                fontWeight: AppTypography.bold,
-                                color: AppColors.text),
+                          AppAvatar(
+                            imageUrl: user?.photo,
+                            name: user?.name,
+                            size: AvatarSize.xxlarge,
                           ),
-                          Text(
-                            user?.email ?? '—',
-                            style: TextStyle(
-                                fontSize: AppTypography.sm,
-                                color: AppColors.textSecondary),
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          AppBadge(
-                            label: serviceTypeLabel,
-                            variant: BadgeVariant.primary,
-                            size: BadgeSize.small,
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  user?.name ?? '—',
+                                  style: TextStyle(
+                                      fontSize: AppTypography.xl,
+                                      fontWeight: AppTypography.bold,
+                                      color: AppColors.text),
+                                ),
+                                Text(
+                                  user?.email ?? '—',
+                                  style: TextStyle(
+                                      fontSize: AppTypography.sm,
+                                      color: AppColors.textSecondary),
+                                ),
+                                const SizedBox(height: AppSpacing.xs),
+                                AppBadge(
+                                  label: serviceTypeLabel,
+                                  variant: BadgeVariant.primary,
+                                  size: BadgeSize.small,
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     ),
+                    _buildMenuSection(),
+                    AppButton(
+                      title: _isLoggingOut ? 'Saindo...' : 'Sair da Conta',
+                      onPressed: () => _handleLogout(),
+                      disabled: _isLoggingOut,
+                      variant: ButtonVariant.outline,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Text(
+                      'Versão 1.0.0',
+                      style: TextStyle(
+                          fontSize: AppTypography.sm, color: AppColors.textLight),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
                   ],
                 ),
               ),
-              _buildServicesSection(),
-              _buildMenuSection(),
-              AppButton(
-                title: _isLoggingOut ? 'Saindo...' : 'Sair da Conta',
-                onPressed: () => _handleLogout(),
-                disabled: _isLoggingOut,
-                variant: ButtonVariant.outline,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Text(
-                'Versão 1.0.0',
-                style: TextStyle(
-                    fontSize: AppTypography.sm, color: AppColors.textLight),
-              ),
-              const SizedBox(height: AppSpacing.xl),
             ],
           ),
         ),
@@ -163,88 +145,15 @@ class _ProfessionalProfileScreenState
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.md),
+          AppSpacing.lg, 48, AppSpacing.lg, AppSpacing.md),
       color: AppColors.secondary,
-      child: Text(
+      child: const Text(
         'Perfil',
         style: TextStyle(
             fontSize: AppTypography.xxl,
             fontWeight: AppTypography.bold,
             color: AppColors.textOnPrimary),
       ),
-    );
-  }
-
-  Widget _buildServicesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Meus Serviços',
-              style: TextStyle(
-                  fontSize: AppTypography.lg,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.text),
-            ),
-            IconButton(
-              icon: const Icon(Icons.add_circle_outline),
-              color: AppColors.primary,
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Edite o perfil para gerenciar serviços')),
-                );
-              },
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        if (_loadingServices)
-          const Center(child: Padding(
-            padding: EdgeInsets.all(AppSpacing.md),
-            child: CircularProgressIndicator(),
-          ))
-        else if (_services.isEmpty)
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Text(
-              'Nenhum serviço cadastrado',
-              style: TextStyle(
-                  fontSize: AppTypography.base,
-                  color: AppColors.textSecondary),
-            ),
-          )
-        else
-          ..._services.map((s) {
-            return AppCard(
-              variant: CardVariant.outlined,
-              margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-              padding: const EdgeInsets.all(AppSpacing.md),
-                child: Row(
-                children: [
-                  Expanded(
-                    child: Text(s.name,
-                        style: const TextStyle(
-                            fontSize: AppTypography.base,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.text)),
-                  ),
-                  Text(
-                    Formatters.formatCurrency(s.price),
-                    style: const TextStyle(
-                        fontSize: AppTypography.base,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary),
-                  ),
-                ],
-              ),
-            );
-          }),
-        const SizedBox(height: AppSpacing.lg),
-      ],
     );
   }
 
@@ -266,7 +175,7 @@ class _ProfessionalProfileScreenState
           icon: Icons.work_outline,
           title: 'Gerenciar Serviços',
           onTap: () {
-            context.push('${RouteNames.professionalProfile}/edit');
+            context.push('${RouteNames.professionalProfile}/services');
           }),
       _MenuItem(
           icon: Icons.schedule,
@@ -275,12 +184,6 @@ class _ProfessionalProfileScreenState
             ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                     content: Text('Funcionalidade em desenvolvimento')));
-          }),
-      _MenuItem(
-          icon: Icons.location_on_outlined,
-          title: 'Endereço de Atendimento',
-          onTap: () {
-            context.push('${RouteNames.professionalProfile}/address');
           }),
     ];
 

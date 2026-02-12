@@ -137,11 +137,11 @@ class _ClientProfileScreenState extends ConsumerState<ClientProfileScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: SingleChildScrollView(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              _buildHeader(),
+              Padding(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
                   children: [
@@ -152,8 +152,8 @@ class _ClientProfileScreenState extends ConsumerState<ClientProfileScreen> {
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       bottomSheet: _showCancelModal ? _buildCancelModal() : null,
@@ -164,9 +164,9 @@ class _ClientProfileScreenState extends ConsumerState<ClientProfileScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.md),
+          AppSpacing.lg, 48, AppSpacing.lg, AppSpacing.md),
       color: AppColors.primary,
-      child: Text(
+      child: const Text(
         'Meu Perfil',
         style: TextStyle(
             fontSize: AppTypography.xxl,

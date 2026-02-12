@@ -45,6 +45,7 @@ class _ClientEditProfileScreenState extends ConsumerState<ClientEditProfileScree
     final addr = user?.address;
     _address = addr != null
         ? AddressModel(
+            id: addr.id,
             cep: addr.cep,
             street: addr.street,
             number: addr.number,

@@ -35,7 +35,7 @@ class ProfessionalModel {
 
   factory ProfessionalModel.fromJson(Map<String, dynamic> json) {
     return ProfessionalModel(
-      id: json['id'] as String,
+      id: json['id']?.toString() ?? '',
       name: json['name'] as String,
       email: json['email'] as String? ?? '',
       phone: json['phone'] as String? ?? '',

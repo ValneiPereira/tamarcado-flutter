@@ -137,6 +137,18 @@ class Formatters {
     return icons[serviceType] ?? '\u{1F539}';
   }
 
+  static String formatDuration(int minutes) {
+    if (minutes < 60) return '$minutes min';
+    final hours = minutes ~/ 60;
+    final remainingMinutes = minutes % 60;
+    if (remainingMinutes == 0) return '${hours}h';
+    return '${hours}h ${remainingMinutes}min';
+  }
+
+  static String dateToString(dynamic date) {
+    return formatDateShort(date);
+  }
+
   static DateTime _parseDate(dynamic date) {
     if (date is DateTime) return date;
     if (date is String) return DateTime.parse(date);

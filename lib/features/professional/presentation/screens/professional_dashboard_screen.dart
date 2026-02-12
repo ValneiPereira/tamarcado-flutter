@@ -118,10 +118,13 @@ class _ProfessionalDashboardScreenState
                     color: AppColors.textOnPrimary),
                 onPressed: () {},
               ),
-              AppAvatar(
-                imageUrl: user?.photo,
-                name: user?.name,
-                size: AvatarSize.small,
+              InkWell(
+                onTap: () => context.go(RouteNames.professionalProfile),
+                child: AppAvatar(
+                  imageUrl: user?.photo,
+                  name: user?.name,
+                  size: AvatarSize.small,
+                ),
               ),
             ],
           ),

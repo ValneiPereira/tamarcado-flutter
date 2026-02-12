@@ -8,6 +8,7 @@ import '../features/auth/presentation/screens/register_client_screen.dart';
 import '../features/auth/presentation/screens/register_professional_screen.dart';
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../features/client/presentation/screens/client_home_screen.dart';
+import '../features/client/presentation/screens/professional_detail_screen.dart';
 import '../features/client/presentation/screens/client_appointments_screen.dart';
 import '../features/client/presentation/screens/client_profile_screen.dart';
 import '../features/client/presentation/screens/client_edit_profile_screen.dart';
@@ -15,6 +16,7 @@ import '../features/client/presentation/screens/client_addresses_screen.dart';
 import '../features/client/presentation/screens/client_change_password_screen.dart';
 import '../features/professional/presentation/screens/professional_dashboard_screen.dart';
 import '../features/professional/presentation/screens/professional_appointments_screen.dart';
+import '../features/professional/presentation/screens/professional_services_screen.dart';
 import '../features/professional/presentation/screens/professional_profile_screen.dart';
 import '../features/professional/presentation/screens/professional_edit_profile_screen.dart';
 import '../features/professional/presentation/screens/professional_address_screen.dart';
@@ -78,12 +80,25 @@ class ProfessionalShell extends StatelessWidget {
   }
 }
 
+// Classe para notificar o GoRouter sobre mudanças no estado de auth sem recriar o roteador
+class AuthRefreshListenable extends ChangeNotifier {
+  AuthRefreshListenable(Ref ref) {
+    ref.listen(authProvider, (_, __) => notifyListeners());
+  }
+}
+
+final authRefreshListenableProvider =
+    Provider((ref) => AuthRefreshListenable(ref));
+
 final goRouterProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
+  final refreshListenable = ref.read(authRefreshListenableProvider);
 
   return GoRouter(
     initialLocation: RouteNames.login,
+    refreshListenable: refreshListenable,
     redirect: (context, state) {
+      final authState = ref.read(authProvider);
+      
       if (authState.isInitializing) return null;
 
       final isAuth = authState.isAuthenticated;
@@ -137,6 +152,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             GoRoute(
               path: RouteNames.clientHome,
               builder: (_, __) => const ClientHomeScreen(),
+              routes: [
+                GoRoute(
+                  path: 'professional/:id',
+                  builder: (context, state) {
+                    final id = state.pathParameters['id']!;
+                    return ProfessionalDetailScreen(professionalId: id);
+                  },
+                ),
+              ],
             ),
           ]),
           StatefulShellBranch(routes: [
@@ -193,6 +217,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                 GoRoute(
                   path: 'edit',
                   builder: (_, __) => const ProfessionalEditProfileScreen(),
+                ),
+                GoRoute(
+                  path: 'services',
+                  builder: (_, __) => const ProfessionalServicesScreen(),
                 ),
                 GoRoute(
                   path: 'address',

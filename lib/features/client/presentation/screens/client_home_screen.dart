@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../../core/constants/services_data.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -45,11 +46,11 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     } catch (_) {}
   }
 
-  void _searchProfessionals() {
+  void _searchProfessionals({String? category, String? serviceType}) {
     final search = ref.read(professionalSearchProvider);
     ref.read(professionalsListProvider.notifier).searchProfessionals(
-          category: search.selectedCategory?.value,
-          serviceType: search.selectedServiceType,
+          category: category ?? search.selectedCategory?.value,
+          serviceType: serviceType ?? search.selectedServiceType,
           latitude: _position?.latitude,
           longitude: _position?.longitude,
           sortBy: search.sortBy == SortBy.distance ? 'distance' : 'rating',
@@ -115,10 +116,13 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
                     color: AppColors.textOnPrimary),
                 onPressed: () {},
               ),
-              AppAvatar(
-                imageUrl: user?.photo,
-                name: user?.name,
-                size: AvatarSize.small,
+              InkWell(
+                onTap: () => context.go(RouteNames.clientProfile),
+                child: AppAvatar(
+                  imageUrl: user?.photo,
+                  name: user?.name,
+                  size: AvatarSize.small,
+                ),
               ),
             ],
           ),
@@ -133,10 +137,6 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     String firstName,
   ) {
     switch (searchState.step) {
-      case 1:
-        return _buildStep1(searchState, firstName);
-      case 2:
-        return _buildStep2(searchState);
       case 3:
         return _buildStep3(searchState, listState);
       default:
@@ -205,8 +205,13 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
                 borderRadius: BorderRadius.circular(AppBorderRadius.lg),
                 child: InkWell(
                   onTap: () {
-                    ref.read(professionalSearchProvider.notifier).setCategory(category);
-                    ref.read(professionalSearchProvider.notifier).setServiceTypeForStep2(type.value);
+                    ref
+                        .read(professionalSearchProvider.notifier)
+                        .setSelectedService(category, type.value);
+                    _searchProfessionals(
+                      category: category.value,
+                      serviceType: type.value,
+                    );
                   },
                   borderRadius: BorderRadius.circular(AppBorderRadius.lg),
                   child: Padding(
@@ -240,76 +245,6 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     );
   }
 
-  Widget _buildStep2(ProfessionalSearchState searchState) {
-    final typeLabel = searchState.selectedServiceType != null
-        ? Formatters.formatServiceName(searchState.selectedServiceType!)
-        : '';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        InkWell(
-          onTap: () =>
-              ref.read(professionalSearchProvider.notifier).goBack(),
-          child: Row(
-            children: [
-              const Icon(Icons.arrow_back, color: AppColors.primary, size: 24),
-              const SizedBox(width: AppSpacing.xs),
-              Text(
-                'Voltar',
-                style: TextStyle(
-                    fontSize: AppTypography.base,
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w500),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Text(
-          typeLabel,
-          style: TextStyle(
-              fontSize: AppTypography.xl,
-              fontWeight: AppTypography.bold,
-              color: AppColors.text),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          'Escolha o serviço desejado:',
-          style: TextStyle(
-              fontSize: AppTypography.base, color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        Center(
-          child: Column(
-            children: [
-              Icon(Icons.info_outline, size: 48, color: AppColors.textLight),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                'Os profissionais serão listados na próxima etapa.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    fontSize: AppTypography.base,
-                    color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _searchProfessionals,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                  ),
-                  child: const Text('Buscar profissionais'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildStep3(
       ProfessionalSearchState searchState, ProfessionalsListState listState) {
@@ -419,8 +354,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
                 elevation: 2,
                 child: InkWell(
                   onTap: () {
-                    // TODO: navegar para detalhe do profissional
-                    // context.push('${RouteNames.clientHome}/professional/${prof.id}');
+                    context.push('${RouteNames.clientHome}/professional/${prof.id}');
                   },
                   borderRadius: BorderRadius.circular(AppBorderRadius.xl),
                   child: Padding(

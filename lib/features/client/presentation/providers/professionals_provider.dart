@@ -48,7 +48,6 @@ class ProfessionalSearchNotifier
   void setCategory(ServiceCategory category) {
     state = state.copyWith(
       selectedCategory: category,
-      step: 2,
     );
   }
 
@@ -59,10 +58,11 @@ class ProfessionalSearchNotifier
     );
   }
 
-  void setServiceTypeForStep2(String serviceType) {
+  void setSelectedService(ServiceCategory category, String serviceType) {
     state = state.copyWith(
+      selectedCategory: category,
       selectedServiceType: serviceType,
-      step: 2,
+      step: 3,
     );
   }
 
@@ -79,7 +79,9 @@ class ProfessionalSearchNotifier
   }
 
   void goBack() {
-    if (state.step > 1) {
+    if (state.step == 3) {
+      state = state.copyWith(step: 1);
+    } else if (state.step > 1) {
       state = state.copyWith(step: state.step - 1);
     }
   }

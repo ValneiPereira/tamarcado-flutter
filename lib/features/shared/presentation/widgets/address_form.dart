@@ -31,6 +31,7 @@ class _AddressFormState extends State<AddressForm> {
   late TextEditingController _cityController;
   late TextEditingController _stateController;
   bool _loadingCep = false;
+  final _cepFormatter = Masks.cep();
 
   @override
   void initState() {
@@ -42,6 +43,36 @@ class _AddressFormState extends State<AddressForm> {
     _neighborhoodController = TextEditingController(text: widget.address.neighborhood);
     _cityController = TextEditingController(text: widget.address.city);
     _stateController = TextEditingController(text: widget.address.state);
+  }
+
+  @override
+  void didUpdateWidget(AddressForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Só atualizamos se o endereço mudou substancialmente (ex: vindo de fora)
+    // e o usuário não está digitando no campo de CEP
+    if (widget.address != oldWidget.address && !_loadingCep) {
+      if (_cepController.text != widget.address.cep) {
+        _cepController.text = widget.address.cep;
+      }
+      if (_streetController.text != widget.address.street) {
+        _streetController.text = widget.address.street;
+      }
+      if (_numberController.text != widget.address.number) {
+        _numberController.text = widget.address.number;
+      }
+      if (_complementController.text != (widget.address.complement ?? '')) {
+        _complementController.text = widget.address.complement ?? '';
+      }
+      if (_neighborhoodController.text != widget.address.neighborhood) {
+        _neighborhoodController.text = widget.address.neighborhood;
+      }
+      if (_cityController.text != widget.address.city) {
+        _cityController.text = widget.address.city;
+      }
+      if (_stateController.text != widget.address.state) {
+        _stateController.text = widget.address.state;
+      }
+    }
   }
 
   @override
@@ -57,11 +88,13 @@ class _AddressFormState extends State<AddressForm> {
   }
 
   void _emitChange() {
-    widget.onChanged(AddressModel(
+    // Preservamos o ID e coordenadas originais
+    widget.onChanged(widget.address.copyWith(
       cep: _cepController.text,
       street: _streetController.text,
       number: _numberController.text,
-      complement: _complementController.text.isEmpty ? null : _complementController.text,
+      complement:
+          _complementController.text.isEmpty ? null : _complementController.text,
       neighborhood: _neighborhoodController.text,
       city: _cityController.text,
       state: _stateController.text,
@@ -69,23 +102,32 @@ class _AddressFormState extends State<AddressForm> {
   }
 
   Future<void> _handleCepChange(String value) async {
-    final masked = Masks.maskCep(value);
-    _cepController.text = masked;
-    _cepController.selection = TextSelection.fromPosition(
-      TextPosition(offset: masked.length),
-    );
-    _emitChange();
-
-    final digits = Masks.unmask(masked);
+    final digits = Masks.unmask(value);
     if (digits.length == 8 && widget.cepDatasource != null) {
       setState(() => _loadingCep = true);
       try {
         final addr = await widget.cepDatasource!.lookupCep(digits);
-        _streetController.text = addr.street;
-        _neighborhoodController.text = addr.neighborhood;
-        _cityController.text = addr.city;
-        _stateController.text = addr.state;
-        _emitChange();
+
+        // Atualizamos os controllers internos
+        setState(() {
+          _streetController.text = addr.street;
+          _neighborhoodController.text = addr.neighborhood;
+          _cityController.text = addr.city;
+          _stateController.text = addr.state;
+        });
+
+        // Notificamos o pai imediatamente com o novo endereço completo
+        // Mantendo o número que já pode ter sido digitado
+        widget.onChanged(widget.address.copyWith(
+          cep: addr.cep,
+          street: addr.street,
+          neighborhood: addr.neighborhood,
+          city: addr.city,
+          state: addr.state,
+          latitude: addr.latitude,
+          longitude: addr.longitude,
+          number: _numberController.text,
+        ));
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -95,6 +137,9 @@ class _AddressFormState extends State<AddressForm> {
       } finally {
         if (mounted) setState(() => _loadingCep = false);
       }
+    } else {
+      // Se noca for mudança de digits completas, apenas emitimos a alteração normal do campo
+      _emitChange();
     }
   }
 
@@ -112,7 +157,7 @@ class _AddressFormState extends State<AddressForm> {
                 onChanged: _handleCepChange,
                 hintText: '00000-000',
                 keyboardType: TextInputType.number,
-                maxLength: 9,
+                inputFormatters: [_cepFormatter],
               ),
             ),
             const SizedBox(width: AppSpacing.md),

@@ -12,13 +12,11 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_input.dart';
 import '../../../../core/widgets/loading_spinner.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../client/data/models/service_model.dart';
 import '../../../shared/data/datasources/cep_remote_datasource.dart';
 import '../../../shared/data/datasources/cloudinary_datasource.dart';
 import '../../../shared/data/datasources/user_remote_datasource.dart';
 import '../../../shared/data/models/address_model.dart';
 import '../../../shared/presentation/widgets/address_form.dart';
-import '../../../client/data/datasources/professionals_remote_datasource.dart';
 
 class ProfessionalEditProfileScreen extends ConsumerStatefulWidget {
   const ProfessionalEditProfileScreen({super.key});
@@ -37,8 +35,6 @@ class _ProfessionalEditProfileScreenState
   bool _isLoading = false;
   bool _isUploading = false;
   String? _localPhotoUrl;
-  List<ServiceModel> _services = [];
-  bool _loadingServices = true;
 
   @override
   void initState() {
@@ -50,6 +46,7 @@ class _ProfessionalEditProfileScreenState
     final addr = user?.address;
     _address = addr != null
         ? AddressModel(
+            id: addr.id,
             cep: addr.cep,
             street: addr.street,
             number: addr.number,
@@ -68,19 +65,6 @@ class _ProfessionalEditProfileScreenState
             city: '',
             state: '',
           );
-    _loadServices();
-  }
-
-  Future<void> _loadServices() async {
-    try {
-      final ds = ProfessionalsRemoteDatasource(ref.read(dioClientProvider).dio);
-      final list = await ds.getMyServices();
-      if (mounted) setState(() => _services = list);
-    } catch (_) {
-      if (mounted) setState(() => _services = []);
-    } finally {
-      if (mounted) setState(() => _loadingServices = false);
-    }
   }
 
   @override
@@ -189,174 +173,6 @@ class _ProfessionalEditProfileScreenState
     }
   }
 
-  void _showAddServiceDialog() {
-    final nameController = TextEditingController();
-    final priceController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Adicionar Serviço'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppInput(
-              label: 'Nome',
-              controller: nameController,
-              hintText: 'Ex: Corte de cabelo',
-            ),
-            const SizedBox(height: AppSpacing.md),
-            AppInput(
-              label: 'Preço (R\$)',
-              controller: priceController,
-              hintText: '0,00',
-              keyboardType: TextInputType.number,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancelar')),
-          TextButton(
-            onPressed: () async {
-              final name = nameController.text.trim();
-              final priceStr = priceController.text.replaceAll(',', '.');
-              final price = double.tryParse(priceStr) ?? 0;
-              if (name.isEmpty) return;
-              Navigator.of(ctx).pop();
-              try {
-                final ds = ProfessionalsRemoteDatasource(
-                    ref.read(dioClientProvider).dio);
-                await ds.createService(name: name, price: price);
-                await _loadServices();
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Serviço adicionado!')),
-                  );
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text('Erro: $e'),
-                        backgroundColor: AppColors.error),
-                  );
-                }
-              }
-            },
-            child: const Text('Adicionar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showEditServiceDialog(ServiceModel service) {
-    final nameController = TextEditingController(text: service.name);
-    final priceController = TextEditingController(text: service.price.toString());
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Editar Serviço'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppInput(
-              label: 'Nome',
-              controller: nameController,
-              hintText: 'Nome do serviço',
-            ),
-            const SizedBox(height: AppSpacing.md),
-            AppInput(
-              label: 'Preço (R\$)',
-              controller: priceController,
-              hintText: '0,00',
-              keyboardType: TextInputType.number,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancelar')),
-          TextButton(
-            onPressed: () async {
-              final name = nameController.text.trim();
-              final priceStr = priceController.text.replaceAll(',', '.');
-              final price = double.tryParse(priceStr) ?? 0;
-              if (name.isEmpty) return;
-              Navigator.of(ctx).pop();
-              try {
-                final ds = ProfessionalsRemoteDatasource(
-                    ref.read(dioClientProvider).dio);
-                await ds.updateService(
-                    serviceId: service.id, name: name, price: price);
-                await _loadServices();
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Serviço atualizado!')),
-                  );
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text('Erro: $e'),
-                        backgroundColor: AppColors.error),
-                  );
-                }
-              }
-            },
-            child: const Text('Salvar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _deleteService(ServiceModel service) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Excluir Serviço'),
-        content: Text(
-            'Excluir "${service.name}"? Esta ação não pode ser desfeita.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Não')),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Sim, excluir'),
-          ),
-        ],
-      ),
-    );
-    if (ok != true || !mounted) return;
-    try {
-      final ds =
-          ProfessionalsRemoteDatasource(ref.read(dioClientProvider).dio);
-      await ds.deleteService(service.id);
-      await _loadServices();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Serviço excluído')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Erro ao excluir: $e'),
-              backgroundColor: AppColors.error),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
@@ -451,54 +267,6 @@ class _ProfessionalEditProfileScreenState
               onChanged: (a) => setState(() => _address = a),
               cepDatasource: cepDs,
             ),
-            const SizedBox(height: AppSpacing.xl),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Meus Serviços',
-                  style: TextStyle(
-                      fontSize: AppTypography.lg,
-                      fontWeight: AppTypography.bold,
-                      color: AppColors.text),
-                ),
-                TextButton.icon(
-                  onPressed: _showAddServiceDialog,
-                  icon: const Icon(Icons.add, size: 20),
-                  label: const Text('Adicionar'),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            if (_loadingServices)
-              const Center(child: Padding(
-                padding: EdgeInsets.all(AppSpacing.md),
-                child: CircularProgressIndicator(),
-              ))
-            else
-              ..._services.map((s) => ListTile(
-                    title: Text(s.name),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          Formatters.formatCurrency(s.price),
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primary),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.edit_outlined, size: 20),
-                          onPressed: () => _showEditServiceDialog(s),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.delete_outline,
-                              size: 20, color: AppColors.error),
-                          onPressed: () => _deleteService(s),
-                        ),
-                      ],
-                    ),
-                  )),
             const SizedBox(height: AppSpacing.xl),
             AppButton(
               title: 'Salvar Alterações',

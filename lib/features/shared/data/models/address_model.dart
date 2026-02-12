@@ -1,4 +1,5 @@
 class AddressModel {
+  final int? id;
   final String cep;
   final String street;
   final String number;
@@ -10,6 +11,7 @@ class AddressModel {
   final double? longitude;
 
   const AddressModel({
+    this.id,
     required this.cep,
     required this.street,
     required this.number,
@@ -23,6 +25,7 @@ class AddressModel {
 
   factory AddressModel.fromJson(Map<String, dynamic> json) {
     return AddressModel(
+      id: json['id'] as int?,
       cep: json['cep'] as String? ?? '',
       street: json['street'] as String? ?? '',
       number: json['number'] as String? ?? '',
@@ -30,12 +33,13 @@ class AddressModel {
       neighborhood: json['neighborhood'] as String? ?? '',
       city: json['city'] as String? ?? '',
       state: json['state'] as String? ?? '',
-      latitude: (json['latitude'] ?? json['lat']) as double?,
-      longitude: (json['longitude'] ?? json['lng']) as double?,
+      latitude: (json['latitude'] ?? json['lat'])?.toDouble(),
+      longitude: (json['longitude'] ?? json['lng'])?.toDouble(),
     );
   }
 
   Map<String, dynamic> toJson() => {
+        if (id != null) 'id': id,
         'cep': cep,
         'street': street,
         'number': number,
@@ -48,6 +52,7 @@ class AddressModel {
       };
 
   AddressModel copyWith({
+    int? id,
     String? cep,
     String? street,
     String? number,
@@ -59,6 +64,7 @@ class AddressModel {
     double? longitude,
   }) {
     return AddressModel(
+      id: id ?? this.id,
       cep: cep ?? this.cep,
       street: street ?? this.street,
       number: number ?? this.number,
