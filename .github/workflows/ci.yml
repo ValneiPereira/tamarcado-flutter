@@ -1,0 +1,55 @@
+name: Flutter CI/CD
+
+on:
+  push:
+    branches: [ develop, master ]
+  pull_request:
+    branches: [ develop, master ]
+
+jobs:
+  test:
+    name: Lint and Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate Code (Build Runner)
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+
+      - name: Static Analysis (Lint)
+        run: flutter analyze
+
+      - name: Run Unit Tests
+        run: flutter test --exclude-tags=widget # Rodando apenas unitários para maior velocidade na esteira inicial
+
+  build:
+    name: Build Check
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build APK (Android)
+        run: flutter build apk --debug # Build debug para validar a integridade da compilação
