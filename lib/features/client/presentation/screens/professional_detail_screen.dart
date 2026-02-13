@@ -254,8 +254,11 @@ class _ProfessionalDetailScreenState
   }
 
   Widget _buildAboutSection(ProfessionalModel prof) {
+    final text = (prof.description != null && prof.description!.isNotEmpty)
+        ? prof.description!
+        : 'Profissional de ${Formatters.formatServiceName(prof.serviceType)} na categoria ${Formatters.formatServiceName(prof.category)}.';
     return Text(
-      'Profissional de ${Formatters.formatServiceName(prof.serviceType)} na categoria ${Formatters.formatServiceName(prof.category)}.',
+      text,
       style: TextStyle(
         fontSize: AppTypography.base,
         color: AppColors.textSecondary,

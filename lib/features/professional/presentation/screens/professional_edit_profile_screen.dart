@@ -29,9 +29,11 @@ class _ProfessionalEditProfileScreenState
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
+  final _descriptionController = TextEditingController();
   late AddressModel _address;
   bool _isLoading = false;
   bool _isUploading = false;
+  bool _isLoadingDescription = true;
   String? _localPhotoUrl;
 
   @override
@@ -63,6 +65,25 @@ class _ProfessionalEditProfileScreenState
             city: '',
             state: '',
           );
+    _loadDescription();
+  }
+
+  Future<void> _loadDescription() async {
+    try {
+      final dio = ref.read(dioClientProvider).dio;
+      final user = ref.read(authProvider).user;
+      if (user == null) return;
+      final response = await dio.get('/professionals/${user.id}');
+      final data = response.data['data'] as Map<String, dynamic>;
+      if (mounted) {
+        setState(() {
+          _descriptionController.text = data['description'] as String? ?? '';
+          _isLoadingDescription = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingDescription = false);
+    }
   }
 
   @override
@@ -70,6 +91,7 @@ class _ProfessionalEditProfileScreenState
     _nameController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -151,6 +173,12 @@ class _ProfessionalEditProfileScreenState
         address: _address.toJson()..['cep'] = Masks.unmask(_address.cep),
       );
       ref.read(authProvider.notifier).updateUser(updated);
+
+      // Salvar descrição do profissional
+      final dio = ref.read(dioClientProvider).dio;
+      await dio.put('/professionals/me/description', data: {
+        'description': _descriptionController.text.trim(),
+      });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Perfil atualizado com sucesso!')),
@@ -251,6 +279,38 @@ class _ProfessionalEditProfileScreenState
               keyboardType: TextInputType.phone,
               inputFormatters: [Masks.phone()],
             ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'Sobre',
+              style: TextStyle(
+                  fontSize: AppTypography.lg,
+                  fontWeight: AppTypography.bold,
+                  color: AppColors.text),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            if (_isLoadingDescription)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              )
+            else
+              TextField(
+                controller: _descriptionController,
+                maxLines: 4,
+                maxLength: 500,
+                decoration: InputDecoration(
+                  hintText: 'Fale um pouco sobre você e seus serviços...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: AppColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: AppColors.border),
+                  ),
+                  contentPadding: const EdgeInsets.all(AppSpacing.md),
+                ),
+              ),
             const SizedBox(height: AppSpacing.xl),
             Text(
               'Endereço',

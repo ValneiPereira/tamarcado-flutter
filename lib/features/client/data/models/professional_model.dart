@@ -12,6 +12,7 @@ class ProfessionalModel {
   final String serviceType;
   final double averageRating;
   final int totalRatings;
+  final String? description;
   final AddressModel? address;
   final double? distanceKm;
   final List<ServiceModel> services;
@@ -27,6 +28,7 @@ class ProfessionalModel {
     required this.serviceType,
     this.averageRating = 0,
     this.totalRatings = 0,
+    this.description,
     this.address,
     this.distanceKm,
     this.services = const [],
@@ -44,6 +46,7 @@ class ProfessionalModel {
       serviceType: json['serviceType'] as String,
       averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0,
       totalRatings: json['totalRatings'] as int? ?? 0,
+      description: json['description'] as String?,
       address: json['address'] != null
           ? AddressModel.fromJson(json['address'] as Map<String, dynamic>)
           : null,
@@ -69,6 +72,7 @@ class ProfessionalModel {
         'serviceType': serviceType,
         'averageRating': averageRating,
         'totalRatings': totalRatings,
+        'description': description,
         'address': address?.toJson(),
         'distanceKm': distanceKm,
         'services': services.map((e) => e.toJson()).toList(),
