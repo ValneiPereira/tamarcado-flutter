@@ -9,6 +9,9 @@ import '../../../../core/widgets/app_badge.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/loading_spinner.dart';
+import '../../../../core/widgets/star_rating.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../data/datasources/reviews_remote_datasource.dart';
 import '../../data/models/appointment_model.dart';
 import '../providers/appointments_provider.dart';
 
@@ -289,12 +292,7 @@ class _ClientAppointmentsScreenState
             const SizedBox(height: AppSpacing.md),
             AppButton(
               title: 'Avaliar',
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Funcionalidade em desenvolvimento')),
-                );
-              },
+              onPressed: () => _showReviewSheet(apt),
               variant: ButtonVariant.primary,
               size: ButtonSize.small,
             ),
@@ -317,6 +315,31 @@ class _ClientAppointmentsScreenState
       default:
         return BadgeVariant.neutral;
     }
+  }
+
+  void _showReviewSheet(AppointmentModel apt) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(AppBorderRadius.xl)),
+      ),
+      builder: (_) => _ReviewBottomSheet(
+        appointmentId: apt.id,
+        professionalName: apt.professionalName ?? 'Profissional',
+        serviceName: apt.service?.name ?? '',
+        dio: ref.read(dioClientProvider).dio,
+        onSuccess: () {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Avaliação enviada com sucesso!')),
+            );
+            _load();
+          }
+        },
+      ),
+    );
   }
 
   Future<void> _confirmCancel(String id) async {
@@ -348,6 +371,195 @@ class _ClientAppointmentsScreenState
           const SnackBar(content: Text('Agendamento cancelado!')),
         );
       }
+    }
+  }
+}
+
+class _ReviewBottomSheet extends StatefulWidget {
+  final String appointmentId;
+  final String professionalName;
+  final String serviceName;
+  final dynamic dio;
+  final VoidCallback onSuccess;
+
+  const _ReviewBottomSheet({
+    required this.appointmentId,
+    required this.professionalName,
+    required this.serviceName,
+    required this.dio,
+    required this.onSuccess,
+  });
+
+  @override
+  State<_ReviewBottomSheet> createState() => _ReviewBottomSheetState();
+}
+
+class _ReviewBottomSheetState extends State<_ReviewBottomSheet> {
+  int _rating = 0;
+  final _commentController = TextEditingController();
+  bool _isSending = false;
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_rating == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecione uma nota')),
+      );
+      return;
+    }
+
+    setState(() => _isSending = true);
+    try {
+      final ds = ReviewsRemoteDatasource(widget.dio);
+      final comment = _commentController.text.trim();
+      await ds.createReview(
+        appointmentId: widget.appointmentId,
+        rating: _rating,
+        comment: comment.isEmpty ? null : comment,
+      );
+      if (mounted) {
+        Navigator.of(context).pop();
+        widget.onSuccess();
+      }
+    } catch (e) {
+      if (mounted) {
+        String msg = 'Erro ao enviar avaliação';
+        if (e.toString().contains('already') ||
+            e.toString().contains('já foi')) {
+          msg = 'Este agendamento já foi avaliado';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg), backgroundColor: AppColors.error),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.borderLight,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            const Text(
+              'Avaliar Atendimento',
+              style: TextStyle(
+                fontSize: AppTypography.xl,
+                fontWeight: AppTypography.bold,
+                color: AppColors.text,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              '${widget.professionalName} - ${widget.serviceName}',
+              style: TextStyle(
+                fontSize: AppTypography.base,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            Center(
+              child: StarRating(
+                rating: _rating.toDouble(),
+                size: 40,
+                showValue: false,
+                interactive: true,
+                onRatingChange: (val) => setState(() => _rating = val),
+              ),
+            ),
+            if (_rating > 0)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.xs),
+                  child: Text(
+                    _ratingLabel(_rating),
+                    style: TextStyle(
+                      fontSize: AppTypography.sm,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            const SizedBox(height: AppSpacing.lg),
+            const Text(
+              'Comentário (opcional)',
+              style: TextStyle(
+                fontSize: AppTypography.base,
+                fontWeight: AppTypography.semibold,
+                color: AppColors.text,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            TextField(
+              controller: _commentController,
+              maxLines: 3,
+              maxLength: 1000,
+              decoration: InputDecoration(
+                hintText: 'Conte como foi sua experiência...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                  borderSide: BorderSide(color: AppColors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                  borderSide: BorderSide(color: AppColors.border),
+                ),
+                contentPadding: const EdgeInsets.all(AppSpacing.md),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            AppButton(
+              title: 'Enviar Avaliação',
+              onPressed: () {
+                _submit();
+              },
+              loading: _isSending,
+              disabled: _isSending,
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _ratingLabel(int rating) {
+    switch (rating) {
+      case 1:
+        return 'Muito ruim';
+      case 2:
+        return 'Ruim';
+      case 3:
+        return 'Regular';
+      case 4:
+        return 'Bom';
+      case 5:
+        return 'Excelente';
+      default:
+        return '';
     }
   }
 }
