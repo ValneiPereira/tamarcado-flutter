@@ -14,6 +14,7 @@ class AppointmentModel {
   final String status;
   final String? notes;
   final double? distance;
+  final bool reviewed;
   final String? createdAt;
   final String? updatedAt;
 
@@ -31,6 +32,7 @@ class AppointmentModel {
     required this.status,
     this.notes,
     this.distance,
+    this.reviewed = false,
     this.createdAt,
     this.updatedAt,
   });
@@ -52,6 +54,7 @@ class AppointmentModel {
       status: json['status'] as String,
       notes: json['notes'] as String?,
       distance: (json['distance'] as num?)?.toDouble(),
+      reviewed: json['reviewed'] as bool? ?? false,
       createdAt: json['createdAt'] as String?,
       updatedAt: json['updatedAt'] as String?,
     );

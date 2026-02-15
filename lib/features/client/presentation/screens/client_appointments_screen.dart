@@ -291,9 +291,10 @@ class _ClientAppointmentsScreenState
             const Divider(height: 1),
             const SizedBox(height: AppSpacing.md),
             AppButton(
-              title: 'Avaliar',
+              title: apt.reviewed ? 'Avaliado' : 'Avaliar',
               onPressed: () => _showReviewSheet(apt),
-              variant: ButtonVariant.primary,
+              disabled: apt.reviewed,
+              variant: apt.reviewed ? ButtonVariant.outline : ButtonVariant.primary,
               size: ButtonSize.small,
             ),
           ],

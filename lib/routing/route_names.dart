@@ -7,6 +7,7 @@ class RouteNames {
   static const String registerClient = '/register-client';
   static const String registerProfessional = '/register-professional';
   static const String forgotPassword = '/forgot-password';
+  static const String resetPassword = '/reset-password';
 
   // Client
   static const String clientHome = '/client/home';

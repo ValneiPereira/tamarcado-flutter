@@ -343,9 +343,6 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
           )
         else
           ...list.map((prof) {
-            final price = prof.services.isNotEmpty
-                ? prof.services.first.price
-                : 0.0;
             return Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.md),
               child: Material(
@@ -396,14 +393,6 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
                                     style: TextStyle(
                                         fontSize: AppTypography.sm,
                                         color: AppColors.textSecondary),
-                                  ),
-                                  const Spacer(),
-                                  Text(
-                                    Formatters.formatCurrency(price),
-                                    style: const TextStyle(
-                                        fontSize: AppTypography.base,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.primary),
                                   ),
                                 ],
                               ),

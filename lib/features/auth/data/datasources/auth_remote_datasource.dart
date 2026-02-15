@@ -71,4 +71,14 @@ class AuthRemoteDatasource {
   Future<void> forgotPassword(String email) async {
     await _dio.post('/auth/forgot-password', data: {'email': email});
   }
+
+  Future<void> resetPassword({
+    required String code,
+    required String newPassword,
+  }) async {
+    await _dio.post('/auth/reset-password', data: {
+      'code': code,
+      'newPassword': newPassword,
+    });
+  }
 }

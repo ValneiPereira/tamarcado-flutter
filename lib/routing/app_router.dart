@@ -7,6 +7,7 @@ import '../features/auth/presentation/screens/choose_type_screen.dart';
 import '../features/auth/presentation/screens/register_client_screen.dart';
 import '../features/auth/presentation/screens/register_professional_screen.dart';
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
+import '../features/auth/presentation/screens/reset_password_screen.dart';
 import '../features/client/presentation/screens/client_home_screen.dart';
 import '../features/client/presentation/screens/professional_detail_screen.dart';
 import '../features/client/presentation/screens/client_appointments_screen.dart';
@@ -114,7 +115,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final isAuthRoute = location == RouteNames.login ||
           location == RouteNames.chooseType ||
           location.startsWith('/register') ||
-          location == RouteNames.forgotPassword;
+          location == RouteNames.forgotPassword ||
+          location == RouteNames.resetPassword;
 
       // Não autenticado tentando acessar rota protegida
       if (!isAuth && !isAuthRoute) return RouteNames.login;
@@ -149,6 +151,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RouteNames.forgotPassword,
         builder: (_, __) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.resetPassword,
+        builder: (_, state) => ResetPasswordScreen(
+          email: state.extra as String? ?? '',
+        ),
       ),
 
       // Client shell (tab navigation)

@@ -7,6 +7,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_input.dart';
 import '../providers/auth_provider.dart';
+import '../../../../routing/route_names.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -46,24 +47,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       await datasource.forgotPassword(email);
 
       if (mounted) {
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Link enviado!'),
-            content: const Text(
-              'Verifique seu e-mail para redefinir sua senha.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  context.pop();
-                },
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
+        context.push(RouteNames.resetPassword, extra: email);
       }
     } catch (e) {
       if (mounted) {
@@ -138,7 +122,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   const Text(
-                    'Digite seu e-mail e enviaremos um link para você redefinir sua senha.',
+                    'Digite seu e-mail e enviaremos um código de 6 dígitos para você redefinir sua senha.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: AppTypography.base,
@@ -158,7 +142,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   AppButton(
-                    title: 'Enviar link',
+                    title: 'Enviar código',
                     onPressed: _handleSendLink,
                     loading: _isLoading,
                     size: ButtonSize.large,
